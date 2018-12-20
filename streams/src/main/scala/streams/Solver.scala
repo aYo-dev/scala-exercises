@@ -30,30 +30,17 @@ trait Solver extends GameDef {
    */
   def neighborsWithHistory(b: Block, history: List[Move]): Stream[(Block, List[Move])] = {
 
-    def getPreviousBlock(block: Block, move: Move): Block = {
-      val legalNeighbors = block.legalNeighbors
-      legalNeighbors find(el => el._2 == move) match {
-        case Some(s) => s._1
-        case None => block
-      }
-    }
-
-    def compose(block: Block, hs: List[Move]): Stream[(Block, List[Move])] = {
-      val legalNeighbors = block.legalNeighbors
-      val previousBlock = legalNeighbors find(el => el._2 == hs.head)
-
-      previousBlock match {
-        case Some(s) => (s._1, hs) #:: neighborsWithHistory(s._1, hs.tail)
-        case None => Stream()
-      }
-    }
+    def init (block: Block, moves: List[Move]) =
+      for {
+        historyIndex <- 1 to history.length
+        move <- history
+        neighbor <- b.legalNeighbors
+        if neighbor._2 == move
+      } yield (neighbor._1, history.splitAt(historyIndex)._2)
 
     history match {
       case List() => Stream()
-      case x :: xs => {
-        val pBlock = getPreviousBlock(b, x)
-        compose(pBlock, xs)
-      }
+      case _ :: xs => init(b, xs) toStream
     }
   }
 
